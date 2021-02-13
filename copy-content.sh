@@ -1,0 +1,1 @@
+cp content/* content-local
