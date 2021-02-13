@@ -12,12 +12,6 @@
 %% version 2003/12/01 or later.
 %%%%%%%%%%%%%%%%
 
-%% If you want to use \orcid or the
-%% academicons icons, add "academicons"
-%% to the \documentclass options.
-%% Then compile with XeLaTeX or LuaLaTeX.
-% \documentclass[10pt,a4paper,academicons]{altacv}
-
 %% Use the "normalphoto" option if you want a normal photo instead of cropped to a circle
 % \documentclass[10pt,a4paper,normalphoto]{altacv}
 
@@ -26,16 +20,9 @@
 %% AltaCV uses the fontawesome and academicon fonts
 %% and packages.
 %% See texdoc.net/pkg/fontawecome and http://texdoc.net/pkg/academicons for full list of symbols.
-%% When using the "academicons" option,
-%% Compile with LuaLaTeX for best results. If you
-%% want to use XeLaTeX, you may need to install
-%% Academicons.ttf in your operating system's font %% folder.
 
 
-% Change the page layout if you need to
 \geometry{left=1cm,right=8.5cm,marginparwidth=6.8cm,marginparsep=0.8cm,top=2cm,bottom=1cm}
-
-% Change the font if you want to.
 
 % If using pdflatex:
 \usepackage[utf8]{inputenc}
@@ -45,11 +32,68 @@
 \usepackage[document]{ragged2e}
 \usepackage{comment}
 \usepackage{hyperref}
+\usepackage{xparse}
 
-% If using xelatex or lualatex:
-% \setmainfont{Lato}
+\ExplSyntaxOn
 
-% Change the colours if you want to
+\NewDocumentCommand{\readYAML}{mmm}
+ {% #1 = file (no .yaml extension)
+  % #2 = section
+  % #3 = key
+  \sr_readyaml:nnn { #1 } { #2 } { #3 }
+ }
+
+\tl_new:N \l__sr_readyaml_currsection_tl
+\seq_new:N \l__sr_readyaml_line_seq
+\ior_new:N \g_sr_readyaml_stream
+
+\cs_generate_variant:Nn \seq_set_split:Nnn { NV }
+\cs_generate_variant:Nn \prop_gput:Nnn { cxx }
+\prg_generate_conditional_variant:Nnn \tl_if_blank:n { f } { TF }
+
+\cs_new_protected:Nn \sr_readyaml:nnn
+ {
+  \prop_if_exist:cF { g_sr_readyaml_#1_prop }
+   {
+    \__sr_readyaml_read:n { #1 }
+   }
+  \prop_item:cn { g_sr_readyaml_#1_prop } { #2@#3 }
+ }
+
+\cs_new_protected:Nn \__sr_readyaml_read:n
+ {
+  \prop_new:c { g_sr_readyaml_#1_prop }
+  \ior_open:Nn \g_sr_readyaml_stream { #1.yaml }
+  \ior_str_map_inline:Nn \g_sr_readyaml_stream
+   {
+    \__sr_readyaml_line:nn { #1 } { ##1 }
+   }
+  \ior_close:N \g_sr_readyaml_stream
+ }
+
+\cs_new_protected:Nn \__sr_readyaml_line:nn
+ {% #1 is the file name, #2 the current line
+  \tl_if_blank:nF { #2 }
+   {
+    \seq_set_split:NVn \l__sr_readyaml_line_seq \c_colon_str { #2 }
+    \tl_if_blank:fTF { \seq_item:Nn \l__sr_readyaml_line_seq { 2 } }
+     {% nothing after the colon, set the current section
+      \tl_set:Nx \l__sr_readyaml_currsection_tl { \seq_item:Nn \l__sr_readyaml_line_seq { 1 } }
+     }
+     {% value after the colon, add to the property list
+      \prop_gput:cxx
+       % prop name
+       { g_sr_readyaml_#1_prop }
+       % key
+       { \l__sr_readyaml_currsection_tl @ \seq_item:Nn \l__sr_readyaml_line_seq { 1 } }
+       % value
+       { \seq_item:Nn \l__sr_readyaml_line_seq { 2 } }
+     }
+   }
+ }
+
+\ExplSyntaxOff
+
 \definecolor{VividPurple}{HTML}{3E0097}
 \definecolor{SlateGrey}{HTML}{2D2D2D}
 \definecolor{LightGrey}{HTML}{666666}
@@ -67,41 +111,30 @@
 \colorlet{emphasis}{black}
 \colorlet{body}{SlateGrey}
 
-% Change the bullets for itemize and rating marker
-% for \cvskill if you want to
+
 \renewcommand{\itemmarker}{{\small\textbullet}}
 \renewcommand{\ratingmarker}{\faCircle}
 
 \begin{document}
 \name{FILIP TWARDZIK}
 \tagline{Full Stack Developer} \vspace{7mm}
-% Cropped to square from https://en.wikipedia.org/wiki/Marissa_Mayer#/media/File:Marissa_Mayer_May_2014_(cropped).jpg, CC-BY 2.0
 \photo{3.4cm}{kamioni-photo-2.png}
 \personalinfo{%
-  % Not all of these are required!
-  % You can add your own with \printinfo{symbol}{detail}
+  % \printinfo{symbol}{detail}
   \mailaddress{Ernststra{\ss}e 93, 13509}
   \location{Berlin, Germany}
   \phone{+49 174 316 78 14} \\ \vspace{1.5mm}
   \email{TwardzikF@gmail.com} 
   \linkedin{linkedin.com/in/filip-twardzik} 
-  \homepage{github.com/twardzikf}
-%   \github{github.com/mmayer} % I'm just making this up though.
-%   \orcid{orcid.org/0000-0000-0000-0000} % Obviously making this up too. If you want to use this field (and also other academicons symbols), add "academicons" option to \documentclass{altacv}
+  \homepage{twardzikf.github.io}
+  \github{github.com/twardzikf}
 }
 
-%% Make the header extend all the way to the right, if you want.
 \begin{fullwidth}
-\makecvheader
+  \makecvheader
 \end{fullwidth}
 
-%% Depending on your tastes, you may want to make fonts of itemize environments slightly smaller
 \AtBeginEnvironment{itemize}{\small}
-
-%% Provide the file name containing the sidebar contents as an optional parameter to \cvsection.
-%% You can always just use \marginpar{...} if you do
-%% not need to align the top of the contents to any
-%% \cvsection title in the "main" bar.
 
 \begin{comment}
 \cvsection[page1sidebar]{Summary}
